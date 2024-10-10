@@ -65,6 +65,7 @@ ZSW_LV_IMG_DECLARE(ui_img_charging_png);    // assets/charging.png
 ZSW_LV_IMG_DECLARE(ui_img_running_png);    // assets/running.png
 ZSW_LV_IMG_DECLARE(ui_img_chat_png);    // assets/chat.png
 ZSW_LV_IMG_DECLARE(ui_img_bluetooth_png);    // assets/bluetooth.png
+ZSW_LV_IMG_DECLARE(face_digital_preview);
 
 LV_FONT_DECLARE(ui_font_aliean_47);
 LV_FONT_DECLARE(ui_font_aliean_25);
@@ -319,7 +320,6 @@ static void watchface_show(lv_obj_t *parent, watchface_app_evt_listener evt_cb, 
     if (use_relative_battery) {
         lv_arc_set_range(ui_battery_arc, 0, 100);
     } else {
-
         lv_arc_set_range(ui_battery_arc, 3500, 4200);
     }
 
@@ -657,7 +657,7 @@ static void watchface_ui_invalidate_cached(void)
 
 static const void *watchface_get_preview_img(void)
 {
-    return "S:digital_watchface_preview.bin";
+    return ZSW_LV_IMG_USE(face_digital_preview);
 }
 
 static void arc_event_pressed(lv_event_t *e)
