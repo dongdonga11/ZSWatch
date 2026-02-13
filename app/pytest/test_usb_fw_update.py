@@ -128,11 +128,40 @@ async def test_usb_firmware_update(device_config):
     await _wait_fw_update_boot_log(device_config)
 
 
+def _list_usb_serial_devices():
+    """List all USB serial devices for debugging."""
+    serial_by_id = Path("/dev/serial/by-id")
+    if serial_by_id.exists():
+        devices = list(serial_by_id.iterdir())
+        return [str(d) for d in devices]
+    return []
+
+
 @pytest.mark.asyncio
 @pytest.mark.usefixtures("restore_firmware")
 async def test_ble_firmware_update(device_config):
     _ensure_watchdk(device_config)
     usb_port = _require_usb_port(device_config)
+    mcuboot_port = device_config.get("mcuboot_usb_cdc_port", "")
+
+    print(f"Waiting for application USB port: {usb_port}")
+    print(f"MCUboot USB port configured: {mcuboot_port}")
+    print(f"USB serial devices present before wait: {_list_usb_serial_devices()}")
+
+    # Check if device is stuck in MCUboot instead of application
+    if mcuboot_port and Path(mcuboot_port).exists():
+        print(f"WARNING: MCUboot port {mcuboot_port} is present — device may be stuck in bootloader")
+    if not Path(usb_port).exists():
+        # Wait a bit and re-check with diagnostics
+        await asyncio.sleep(5)
+        print(f"USB serial devices after 5s: {_list_usb_serial_devices()}")
+        if mcuboot_port and Path(mcuboot_port).exists():
+            pytest.fail(
+                f"Device stuck in MCUboot (bootloader port {mcuboot_port} present, "
+                f"application port {usb_port} absent). restore_firmware may have "
+                f"failed to produce a bootable image."
+            )
+
     await _wait_for_usb_port(usb_port, True, timeout_s=15.0)
 
     await _enable_ble_fota(device_config)
@@ -202,5 +231,3 @@ async def test_shell_command_over_ble(device_config):
     response = await _shell_command_ble(device_config, ["ble_fota", "status"])
     print(f"BLE FOTA status: {response.o}")
     assert "enabled" in response.o.lower()
-
-    await _shell_command_usb(device_config, ["ble_fota", "disable"])

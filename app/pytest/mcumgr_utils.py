@@ -85,7 +85,16 @@ async def wait_for_usb_port(
             return
         if loop.time() >= deadline:
             state = "present" if present else "absent"
-            pytest.fail(f"USB port {usb_port} not {state} within {timeout_s}s")
+            # List all USB serial devices for debugging
+            serial_by_id = Path("/dev/serial/by-id")
+            if serial_by_id.exists():
+                available = [str(p) for p in serial_by_id.iterdir()]
+            else:
+                available = []
+            pytest.fail(
+                f"USB port {usb_port} not {state} within {timeout_s}s. "
+                f"Available USB serial devices: {available}"
+            )
         await asyncio.sleep(interval_s)
 
 
